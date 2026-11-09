@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Master - Thử Thách Bậc Thầy Chuột 12 Màn Chơi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Audio Synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            overflow: hidden;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        .pulse-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pulse-btn:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+        }
+        .level-card {
+            transition: all 0.2s ease;
+        }
+        .level-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden select-none bg-slate-950 text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="glass-panel px-6 py-3 flex justify-between items-center z-20 border-b border-slate-800">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showMenu()">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-mouse-pointer text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black font-orbitron tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                    MOUSE MASTER
+                </h1>
+                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">12 Thử Thách Kỹ Năng Chuột</p>
+            </div>
+        </div>
+
+        <!-- Live Scoreboard HUD -->
+        <div class="flex items-center space-x-6 bg-slate-900/90 px-6 py-2 rounded-2xl border border-slate-800 shadow-inner">
+            <div class="text-center">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Màn Chơi</div>
+                <div id="hud-level" class="text-xl font-black font-orbitron text-purple-400">1/12</div>
+            </div>
+            <div class="h-8 w-px bg-slate-800"></div>
+            <div class="text-center">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Điểm Số</div>
+                <div id="hud-score" class="text-2xl font-black font-orbitron text-blue-400">0</div>
+            </div>
+            <div class="h-8 w-px bg-slate-800"></div>
+            <div class="text-center">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Combo</div>
+                <div id="hud-combo" class="text-2xl font-black font-orbitron text-amber-400">x1</div>
+            </div>
+            <div class="h-8 w-px bg-slate-800"></div>
+            <div class="text-center">
+                <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Thời Gian</div>
+                <div id="hud-timer" class="text-2xl font-black font-orbitron text-emerald-400">30s</div>
+            </div>
+        </div>
+
+        <!-- Controls / Audio Toggle -->
+        <div class="flex items-center space-x-3">
+            <button id="btn-sound" class="p-3 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-xl border border-slate-700 transition">
+                <i class="fa-solid fa-volume-high text-lg"></i>
+            </button>
+            <button onclick="showMenu()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition flex items-center gap-2">
+                <i class="fa-solid fa-list"></i>
+                <span>Chọn Màn</span>
+            </button>
+            <button id="btn-restart" class="px-4 py-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-rose-900/30 transition flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>Chơi Lại</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden">
+        <!-- Interactive Game Canvas -->
+        <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
+
+        <!-- Dynamic Game Mode Floating Info Banner -->
+        <div id="mode-info" class="absolute top-4 left-1/2 -translate-x-1/2 glass-panel px-6 py-2.5 rounded-full border border-blue-500/40 text-center pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-4 z-10 max-w-xl">
+            <h2 id="mode-title" class="text-lg font-bold font-orbitron text-blue-300">Tên Màn Chơi</h2>
+            <p id="mode-instruction" class="text-xs text-slate-300 font-medium">Hướng dẫn thao tác chuột...</p>
+        </div>
+
+        <!-- Main Menu & Level Select Overlay -->
+        <div id="modal-menu" class="absolute inset-0 glass-panel bg-slate-950/95 z-30 flex items-center justify-center p-6">
+            <div class="max-w-6xl w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl text-center flex flex-col max-h-[90vh]">
+                
+                <div class="mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/20 mb-3">
+                        <i class="fa-solid fa-gamepad text-3xl text-white"></i>
+                    </div>
+                    <h2 class="text-3xl font-black font-orbitron text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400">
+                        CHỌN MÀN CHƠI THAO TÁC CHUỘT
+                    </h2>
+                    <p class="text-slate-400 text-xs mt-1">Luyện tập kỹ năng chuột toàn diện: Nhấp chuột, Nháy đúp, Chuột phải, Di chuột, Kéo thả & Cuộn chuột!</p>
+                </div>
+
+                <!-- 12 Level Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 overflow-y-auto custom-scrollbar p-2 mb-4 text-left flex-1">
+                    <!-- Level 1 -->
+                    <div onclick="selectLevel(1)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-blue-400 font-orbitron mb-1">MÀN 1</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-arrow-pointer text-blue-400"></i> Nhấp Chuột Trái</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Bắn tiêu điểm di động với độ chính xác cao.</p>
+                    </div>
+
+                    <!-- Level 2 -->
+                    <div onclick="selectLevel(2)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-purple-400 font-orbitron mb-1">MÀN 2</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-mouse text-purple-400"></i> Nhấp Chuột Phải</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Phản xạ nhanh bấm chuột phải chính xác.</p>
+                    </div>
+
+                    <!-- Level 3 -->
+                    <div onclick="selectLevel(3)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-pink-400 font-orbitron mb-1">MÀN 3</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-bolt text-pink-400"></i> Nháy Đúp Chuột</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Nháy đúp vào biểu tượng phần mềm đứng yên để mở lên.</p>
+                    </div>
+
+                    <!-- Level 4 -->
+                    <div onclick="selectLevel(4)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-emerald-400 font-orbitron mb-1">MÀN 4</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-hand-back-fist text-emerald-400"></i> Kéo & Thả Fast</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Giữ chuột kéo thả vật thể phân loại đúng màu.</p>
+                    </div>
+
+                    <!-- Level 5 -->
+                    <div onclick="selectLevel(5)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-cyan-400 font-orbitron mb-1">MÀN 5</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-route text-cyan-400"></i> Mê Cung Laser</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Di chuyển con trỏ qua đường hẹp không chạm vách.</p>
+                    </div>
+
+                    <!-- Level 6 -->
+                    <div onclick="selectLevel(6)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-amber-400 font-orbitron mb-1">MÀN 6</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-cubes text-amber-400"></i> Bão Hỗn Hợp</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Kế thừa đủ các loại thao tác chuột xuất hiện dồn dập.</p>
+                    </div>
+
+                    <!-- Level 7 -->
+                    <div onclick="selectLevel(7)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-rose-400 font-orbitron mb-1">MÀN 7</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-rose-400"></i> Di Chuột Thu Gom</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Di chuột ăn sao năng lượng & né bom tự do.</p>
+                    </div>
+
+                    <!-- Level 8 -->
+                    <div onclick="selectLevel(8)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-indigo-400 font-orbitron mb-1">MÀN 8</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-puzzle-piece text-indigo-400"></i> Xếp Hình Kéo Thả</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Lắp ráp các mảnh ghép đúng ô vị trí bóng mờ.</p>
+                    </div>
+
+                    <!-- Level 9 -->
+                    <div onclick="selectLevel(9)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-teal-400 font-orbitron mb-1">MÀN 9</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-arrows-up-down text-teal-400"></i> Cuộn Chuột Master</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Sử dụng con lăn chuột cân bằng mức năng lượng.</p>
+                    </div>
+
+                    <!-- Level 10 -->
+                    <div onclick="selectLevel(10)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-orange-400 font-orbitron mb-1">MÀN 10</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-pen-nib text-orange-400"></i> Nối Điểm Chuột</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Giữ chuột rê vẽ liên tục nối liền các điểm số.</p>
+                    </div>
+
+                    <!-- Level 11 -->
+                    <div onclick="selectLevel(11)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-red-400 font-orbitron mb-1">MÀN 11</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-window-close text-red-400"></i> Tắt Cửa Sổ</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Nhấp chuột trái vào nút X để đóng các cửa sổ popup.</p>
+                    </div>
+
+                    <!-- Level 12 -->
+                    <div onclick="selectLevel(12)" class="level-card glass-panel p-3.5 rounded-2xl border border-slate-800 cursor-pointer bg-slate-900/80">
+                        <div class="text-xs font-bold text-slate-400 font-orbitron mb-1">MÀN 12</div>
+                        <div class="font-bold text-sm text-white flex items-center gap-1.5"><i class="fa-solid fa-power-off text-slate-400"></i> Tắt Máy Tính</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Nhiều nút Start sẽ hiện ra. Lặp lại nhanh nhất có thể!</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-4">
+                    <button onclick="startCampaign()" class="px-8 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-black font-orbitron tracking-wider rounded-2xl shadow-xl shadow-blue-600/30 hover:scale-105 transition transform">
+                        <i class="fa-solid fa-play mr-2"></i> BẮT ĐẦU CHẾ ĐỘ MÀN CHƠI (1->12)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over & Level Complete Overlay -->
+        <div id="modal-gameover" class="absolute inset-0 glass-panel bg-slate-950/95 z-30 hidden flex items-center justify-center p-6">
+            <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl">
+                <div id="go-icon-container" class="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-amber-500/20 text-amber-400 shadow-lg shadow-amber-500/10">
+                    <i id="go-icon" class="fa-solid fa-trophy text-4xl"></i>
+                </div>
+                <h2 id="go-title" class="text-3xl font-black font-orbitron text-white mb-1">HOÀN THÀNH MÀN!</h2>
+                <p id="go-subtitle" class="text-slate-400 text-xs mb-6">Bạn đã thể hiện phản xạ thao tác chuột tuyệt vời!</p>
+
+                <div class="bg-slate-950/70 rounded-2xl p-4 border border-slate-800 space-y-3 mb-6">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Màn Hiện Tại:</span>
+                        <span id="go-level-name" class="text-sm font-bold font-orbitron text-purple-400">Màn 1</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Tổng Điểm Số:</span>
+                        <span id="go-score" class="text-2xl font-black font-orbitron text-blue-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Combo Cao Nhất:</span>
+                        <span id="go-max-combo" class="text-lg font-bold font-orbitron text-amber-400">x0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Độ Chính Xác:</span>
+                        <span id="go-accuracy" class="text-lg font-bold font-orbitron text-emerald-400">100%</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="showMenu()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition">
+                        Menu Chính
+                    </button>
+                    <button id="btn-next-level" onclick="nextLevel()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition">
+                        Màn Tiếp Theo <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        class SoundEngine {
+            constructor() {
+                this.enabled = true;
+                this.initialized = false;
+                this.synth = null;
+                this.polySynth = null;
+            }
+
+            async init() {
+                if (this.initialized) return;
+                try {
+                    await Tone.start();
+                    this.synth = new Tone.Synth({
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+                    }).toDestination();
+                    
+                    this.polySynth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'triangle' },
+                        envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 }
+                    }).toDestination();
+                    this.polySynth.volume.value = -6;
+
+                    this.initialized = true;
+                } catch (e) {
+                    console.log("Audio context trigger required.");
+                }
+            }
+
+            playPop(freq = 440) {
+                if (!this.enabled || !this.initialized) return;
+                try { this.synth.triggerAttackRelease(freq, '8n'); } catch(e){}
+            }
+
+            playSuccess() {
+                if (!this.enabled || !this.initialized) return;
+                try {
+                    const now = Tone.now();
+                    this.polySynth.triggerAttackRelease(["C5", "E5", "G5"], "16n", now);
+                } catch(e){}
+            }
+
+            playError() {
+                if (!this.enabled || !this.initialized) return;
+                try {
+                    const now = Tone.now();
+                    this.polySynth.triggerAttackRelease(["F3", "C3"], "8n", now);
+                } catch(e){}
+            }
+
+            playLevelUp() {
+                if (!this.enabled || !this.initialized) return;
+                try {
+                    const now = Tone.now();
+                    this.polySynth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now);
+                } catch(e){}
+            }
+        }
+
+        const sounds = new SoundEngine();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameState = 'MENU'; // MENU, PLAYING, GAMEOVER
+        let currentLevel = 1; // 1 to 12
+        
+        let score = 0;
+        let combo = 1;
+        let maxCombo = 1;
+        let timeLeft = 30;
+        let timerInterval = null;
+        let totalClicks = 0;
+        let successfulClicks = 0;
+
+        let mousePos = { x: 0, y: 0 };
+        let particles = [];
+        let openPopups = []; // Hiệu ứng chữ "MỞ LÊN" cho Màn 3
+        
+        // Level Specific State Data
+        let levelData = {};
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 4 + 2;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.03 + 0.015;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+
+            draw(context) {
+                context.save();
+                context.globalAlpha = Math.max(0, this.alpha);
+                context.beginPath();
+                context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                context.fillStyle = this.color;
+                context.shadowColor = this.color;
+                context.shadowBlur = 10;
+                context.fill();
+                context.restore();
+            }
+        }
+
+        function createExplosion(x, y, color, count = 15) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        const LEVEL_CONFIGS = {
+            1: { name: "Màn 1: Nhấp Chuột Trái", desc: "Bấm chuột trái vào các mục tiêu di chuyển xuất hiện!", time: 25 },
+            2: { name: "Màn 2: Nhấp Chuột Phải", desc: "Sử dụng nút chuột phải bấm chính xác vào bia mục tiêu màu tím!", time: 25 },
+            3: { name: "Màn 3: Nháy Đúp Chuột", desc: "Nháy đúp chuột vào các biểu tượng phần mềm ứng dụng đang đứng yên để mở lên!", time: 25 },
+            4: { name: "Màn 4: Kéo & Thả Phân Loại", desc: "Bấm giữ chuột để kéo các ô vuông màu vào đúng khu vực phân loại!", time: 30 },
+            5: { name: "Màn 5: Mê Cung Laser", desc: "Di chuyển con trỏ cẩn thận theo đường ống laser từ BẮT ĐẦU tới ĐÍCH!", time: 30 },
+            6: { name: "Màn 6: Bão Chuột Hỗn Hợp", desc: "Xuất hiện dồn dập: Chuột trái, Chuột phải, Nháy đúp & Giữ chuột!", time: 35 },
+            7: { name: "Màn 7: Di Chuột Thu Gom", desc: "Rê chuột ăn ngọc xanh và Né tránh hoàn toàn các quả cầu đỏ nổ!", time: 25 },
+            8: { name: "Màn 8: Xếp Hình Kéo Thả", desc: "Kéo các mảnh ghép hình học thả khớp vào các ô bóng mờ tương ứng!", time: 35 },
+            9: { name: "Màn 9: Cuộn Chuột Master", desc: "Dùng con lăn chuột (Mouse Wheel) để giữ thanh chỉ số trong vùng Xanh!", time: 25 },
+            10: { name: "Màn 10: Nối Điểm Chuột", desc: "Giữ chuột trái và rê vẽ đường nối lần lượt từ điểm 1 -> 8!", time: 30 },
+            11: { name: "Màn 11: Tắt Cửa Sổ Popup", desc: "Nhấp chuột trái vào nút [X] màu đỏ ở góc để đóng các cửa sổ đang bật lên!", time: 30 },
+            12: { name: "Màn 12: Tắt Máy Tính", desc: "Nhiều nút Start sẽ xuất hiện! Nhấp Start -> Power -> Shut down lặp lại thật nhanh!", time: 35 }
+        };
+
+        function initLevel(lvl) {
+            currentLevel = lvl;
+            const config = LEVEL_CONFIGS[lvl];
+            timeLeft = config.time;
+            
+            document.getElementById('mode-title').innerText = config.name;
+            document.getElementById('mode-instruction').innerText = config.desc;
+            
+            const infoBanner = document.getElementById('mode-info');
+            infoBanner.style.opacity = '1';
+            infoBanner.style.transform = 'translate(-50%, 0)';
+
+            levelData = {}; // Clear state
+
+            switch(lvl) {
+                case 1: levelData.targets = []; break;
+                case 2: levelData.targets = []; break;
+                case 3: initLevel3StaticApps(); break;
+                case 4: initLevel4DragDrop(); break;
+                case 5: initLevel5Maze(); break;
+                case 6: levelData.targets = []; break;
+                case 7: initLevel7Sweeper(); break;
+                case 8: initLevel8Puzzle(); break;
+                case 9: initLevel9Scroll(); break;
+                case 10: initLevel10Dots(); break;
+                case 11: levelData.windows = []; break;
+                case 12: initLevel12Shutdown(); break;
+            }
+        }
+
+        const APP_ICONS = [
+            { name: "Word", color: "#2b579a" },
+            { name: "Excel", color: "#217346" },
+            { name: "Chrome", color: "#ea4335" },
+            { name: "Paint", color: "#e67e22" },
+            { name: "Folder", color: "#f1c40f" },
+            { name: "Game", color: "#9b59b6" }
+        ];
+
+        function createNewStaticApp() {
+            const app = APP_ICONS[Math.floor(Math.random() * APP_ICONS.length)];
+            return {
+                x: Math.random() * (canvas.width - 200) + 100,
+                y: Math.random() * (canvas.height - 200) + 100,
+                radius: 35,
+                app: app
+            };
+        }
+
+        function initLevel3StaticApps() {
+            levelData.blocks = [];
+            openPopups = [];
+            for (let i = 0; i < 5; i++) {
+                levelData.blocks.push(createNewStaticApp());
+            }
+        }
+
+        function initLevel4DragDrop() {
+            levelData.items = [];
+            levelData.zones = [
+                { id: 'red', color: '#ef4444', label: 'Ô ĐỎ', x: canvas.width * 0.25, y: canvas.height * 0.75, radius: 45 },
+                { id: 'blue', color: '#3b82f6', label: 'Ô XANH', x: canvas.width * 0.5, y: canvas.height * 0.75, radius: 45 },
+                { id: 'green', color: '#10b981', label: 'Ô LỤC', x: canvas.width * 0.75, y: canvas.height * 0.75, radius: 45 }
+            ];
+            
+            const colors = ['red', 'blue', 'green'];
+            for (let i = 0; i < 6; i++) {
+                const type = colors[i % 3];
+                levelData.items.push({
+                    id: i,
+                    type: type,
+                    color: type === 'red' ? '#ef4444' : (type === 'blue' ? '#3b82f6' : '#10b981'),
+                    x: Math.random() * (canvas.width - 200) + 100,
+                    y: Math.random() * 150 + 100,
+                    radius: 30,
+                    isDragging: false,
+                    isDone: false
+                });
+            }
+        }
+
+        function initLevel5Maze() {
+            const startX = 100;
+            const startY = canvas.height / 2;
+            const endX = canvas.width - 100;
+            const endY = canvas.height / 2;
+
+            levelData.maze = {
+                points: [
+                    { x: startX, y: startY },
+                    { x: canvas.width * 0.3, y: canvas.height * 0.2 },
+                    { x: canvas.width * 0.5, y: canvas.height * 0.8 },
+                    { x: canvas.width * 0.7, y: canvas.height * 0.25 },
+                    { x: endX, y: endY }
+                ],
+                width: 55,
+                startX: startX, startY: startY,
+                endX: endX, endY: endY,
+                started: false
+            };
+        }
+
+        function initLevel7Sweeper() {
+            levelData.gems = [];
+            levelData.bombs = [];
+            for (let i = 0; i < 5; i++) {
+                levelData.bombs.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: 22,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6
+                });
+            }
+        }
+
+        function initLevel8Puzzle() {
+            levelData.pieces = [];
+            levelData.slots = [
+                { id: 1, shape: 'circle', x: canvas.width * 0.3, y: canvas.height * 0.6, radius: 35, filled: false },
+                { id: 2, shape: 'square', x: canvas.width * 0.5, y: canvas.height * 0.6, radius: 35, filled: false },
+                { id: 3, shape: 'triangle', x: canvas.width * 0.7, y: canvas.height * 0.6, radius: 35, filled: false }
+            ];
+
+            const shapes = ['circle', 'square', 'triangle'];
+            shapes.forEach((s, idx) => {
+                levelData.pieces.push({
+                    id: idx + 1,
+                    shape: s,
+                    x: canvas.width * 0.25 + idx * canvas.width * 0.25,
+                    y: canvas.height * 0.2,
+                    radius: 30,
+                    isDragging: false,
+                    isSnapped: false
+                });
+            });
+        }
+
+        function initLevel9Scroll() {
+            levelData.scrollVal = 50;
+            levelData.targetMin = 40;
+            levelData.targetMax = 60;
+            levelData.holdTime = 0;
+        }
+
+        function initLevel10Dots() {
+            levelData.dots = [];
+            const count = 8;
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2;
+                const r = Math.min(canvas.width, canvas.height) * 0.3;
+                levelData.dots.push({
+                    id: i + 1,
+                    x: canvas.width / 2 + Math.cos(angle) * r,
+                    y: canvas.height / 2 + Math.sin(angle) * r,
+                    radius: 20,
+                    visited: false
+                });
+            }
+            levelData.currentDotIndex = 0;
+            levelData.isDrawing = false;
+        }
+
+        function initLevel12Shutdown() {
+            levelData.instances = [];
+        }
+
+        let lastTime = performance.now();
+
+        function gameLoop(now) {
+            const dt = Math.min(0.1, (now - lastTime) / 1000);
+            lastTime = now;
+
+            // Clear Canvas Background
+            ctx.fillStyle = '#0b0f19';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawGrid();
+
+            if (gameState === 'PLAYING') {
+                switch(currentLevel) {
+                    case 1: updateLevel1(dt); break;
+                    case 2: updateLevel2(dt); break;
+                    case 3: updateLevel3(dt); break;
+                    case 4: updateLevel4(dt); break;
+                    case 5: updateLevel5(dt); break;
+                    case 6: updateLevel6(dt); break;
+                    case 7: updateLevel7(dt); break;
+                    case 8: updateLevel8(dt); break;
+                    case 9: updateLevel9(dt); break;
+                    case 10: updateLevel10(dt); break;
+                    case 11: updateLevel11(dt); break;
+                    case 12: updateLevel12(dt); break;
+                }
+            }
+
+            // Particles Update & Render
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw(ctx);
+                if (particles[i].alpha <= 0) particles.splice(i, 1);
+            }
+
+            // Open Popup Effect Render for Level 3
+            for (let i = openPopups.length - 1; i >= 0; i--) {
+                const p = openPopups[i];
+                p.life -= dt;
+                p.y -= 25 * dt;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.life);
+                
+                // Floating text "MỞ LÊN"
+                ctx.fillStyle = '#38bdf8';
+                ctx.shadowColor = '#0284c7';
+                ctx.shadowBlur = 12;
+                ctx.font = '900 22px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText('MỞ LÊN', p.x, p.y);
+
+                // Decorative window frame animation
+                const w = 60 * (1.8 - p.life);
+                const h = 40 * (1.8 - p.life);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(p.x - w/2, p.y + 10 - h/2, w, h);
+
+                ctx.restore();
+
+                if (p.life <= 0) openPopups.splice(i, 1);
+            }
+
+            drawCursorTrail();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(30, 41, 59, 0.3)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+        }
+
+        // Level 1: Left Click Targets
+        function updateLevel1(dt) {
+            if (levelData.targets.length < 5 && Math.random() < 0.06) {
+                levelData.targets.push({
+                    x: Math.random() * (canvas.width - 120) + 60,
+                    y: Math.random() * (canvas.height - 120) + 60,
+                    radius: Math.random() * 15 + 22,
+                    life: 3.0,
+                    maxLife: 3.0
+                });
+            }
+
+            for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                const t = levelData.targets[i];
+                t.life -= dt;
+
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, t.life);
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#3b82f6';
+                ctx.shadowColor = '#3b82f6';
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('NHẤP TRÁI', t.x, t.y);
+                ctx.restore();
+
+                if (t.life <= 0) {
+                    combo = 1; updateHUD();
+                    levelData.targets.splice(i, 1);
+                }
+            }
+        }
+
+        // Level 2: Right Click Targets
+        function updateLevel2(dt) {
+            if (levelData.targets.length < 4 && Math.random() < 0.05) {
+                levelData.targets.push({
+                    x: Math.random() * (canvas.width - 120) + 60,
+                    y: Math.random() * (canvas.height - 120) + 60,
+                    radius: Math.random() * 15 + 25,
+                    life: 3.5
+                });
+            }
+
+            for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                const t = levelData.targets[i];
+                t.life -= dt;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#a855f7';
+                ctx.shadowColor = '#a855f7';
+                ctx.shadowBlur = 15;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 11px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('CHUỘT PHẢI', t.x, t.y);
+                ctx.restore();
+
+                if (t.life <= 0) {
+                    combo = 1; updateHUD();
+                    levelData.targets.splice(i, 1);
+                }
+            }
+        }
+
+        // Level 3: Double Click Static Software Apps (Ứng Dụng Đứng Yên Cố Định)
+        function updateLevel3(dt) {
+            for (let i = 0; i < levelData.blocks.length; i++) {
+                const b = levelData.blocks[i];
+
+                ctx.save();
+                
+                // Glow Effect
+                ctx.shadowColor = b.app.color;
+                ctx.shadowBlur = 15;
+
+                // Software Icon Base (Desktop App Tile)
+                const size = b.radius * 2;
+                const rx = b.x - b.radius;
+                const ry = b.y - b.radius;
+
+                ctx.fillStyle = b.app.color;
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(rx, ry, size, size, 14);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(rx, ry, size, size);
+                }
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // FontAwesome Icon rendering symbol
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '900 24px "Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                let iconUnicode = ''; // Folder
+                if (b.app.name === 'Word') iconUnicode = '';
+                if (b.app.name === 'Excel') iconUnicode = '';
+                if (b.app.name === 'Chrome') iconUnicode = '';
+                if (b.app.name === 'Paint') iconUnicode = '';
+                if (b.app.name === 'Game') iconUnicode = '';
+
+                ctx.fillText(iconUnicode, b.x, b.y - 4);
+
+                // App Name Label
+                ctx.font = 'bold 11px Rajdhani, sans-serif';
+                ctx.fillText(b.app.name, b.x, b.y + 20);
+
+                ctx.restore();
+            }
+        }
+
+        // Level 4: Drag & Drop Sorting
+        function updateLevel4(dt) {
+            levelData.zones.forEach(z => {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+                ctx.fill();
+                ctx.strokeStyle = z.color;
+                ctx.setLineDash([6, 6]);
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = z.color;
+                ctx.font = 'bold 12px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(z.label, z.x, z.y);
+                ctx.restore();
+            });
+
+            let finished = true;
+            levelData.items.forEach(item => {
+                if (!item.isDone) finished = false;
+
+                if (item.isDragging) {
+                    item.x = mousePos.x;
+                    item.y = mousePos.y;
+                }
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+                ctx.fillStyle = item.color;
+                ctx.shadowColor = item.color;
+                ctx.shadowBlur = item.isDragging ? 20 : 8;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            if (finished) {
+                addScore(1000, canvas.width/2, canvas.height/2);
+                sounds.playLevelUp();
+                initLevel4DragDrop();
+            }
+        }
+
+        // Level 5: Laser Maze
+        function updateLevel5(dt) {
+            const m = levelData.maze;
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(m.points[0].x, m.points[0].y);
+            for (let i = 1; i < m.points.length; i++) ctx.lineTo(m.points[i].x, m.points[i].y);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = m.width;
+            ctx.strokeStyle = m.started ? 'rgba(6, 182, 212, 0.3)' : 'rgba(71, 85, 105, 0.3)';
+            ctx.stroke();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#06b6d4';
+            ctx.stroke();
+
+            ctx.beginPath(); ctx.arc(m.startX, m.startY, 30, 0, Math.PI * 2);
+            ctx.fillStyle = '#22c55e'; ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Orbitron'; ctx.textAlign = 'center'; ctx.fillText('BẮT ĐẦU', m.startX, m.startY + 4);
+
+            ctx.beginPath(); ctx.arc(m.endX, m.endY, 30, 0, Math.PI * 2);
+            ctx.fillStyle = '#ec4899'; ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.fillText('ĐÍCH', m.endX, m.endY + 4);
+            ctx.restore();
+
+            const distStart = Math.hypot(mousePos.x - m.startX, mousePos.y - m.startY);
+            if (distStart < 30) m.started = true;
+
+            const distEnd = Math.hypot(mousePos.x - m.endX, mousePos.y - m.endY);
+            if (m.started && distEnd < 30) {
+                addScore(1500, m.endX, m.endY);
+                sounds.playLevelUp();
+                initLevel5Maze();
+            }
+        }
+
+        // Level 6: Multi-Action Combo
+        function updateLevel6(dt) {
+            if (levelData.targets.length < 5 && Math.random() < 0.07) {
+                const types = ['LEFT', 'RIGHT', 'DOUBLE'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                levelData.targets.push({
+                    type: type,
+                    x: Math.random() * (canvas.width - 120) + 60,
+                    y: Math.random() * (canvas.height - 120) + 60,
+                    radius: 28,
+                    life: 3.5
+                });
+            }
+
+            for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                const t = levelData.targets[i];
+                t.life -= dt;
+
+                let color = '#3b82f6';
+                let label = 'TRÁI';
+                if (t.type === 'RIGHT') { color = '#a855f7'; label = 'PHẢI'; }
+                if (t.type === 'DOUBLE') { color = '#ec4899'; label = 'ĐÚP'; }
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Orbitron'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(label, t.x, t.y);
+                ctx.restore();
+
+                if (t.life <= 0) {
+                    combo = 1; updateHUD(); levelData.targets.splice(i, 1);
+                }
+            }
+        }
+
+        // Level 7: Mouse Sweeper
+        function updateLevel7(dt) {
+            if (levelData.gems.length < 4 && Math.random() < 0.08) {
+                levelData.gems.push({
+                    x: Math.random() * (canvas.width - 100) + 50,
+                    y: Math.random() * (canvas.height - 100) + 50,
+                    radius: 15
+                });
+            }
+
+            for (let i = levelData.gems.length - 1; i >= 0; i--) {
+                const g = levelData.gems[i];
+                ctx.save();
+                ctx.beginPath(); ctx.arc(g.x, g.y, g.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#10b981'; ctx.shadowColor = '#10b981'; ctx.shadowBlur = 10; ctx.fill();
+                ctx.restore();
+
+                if (Math.hypot(mousePos.x - g.x, mousePos.y - g.y) < g.radius + 10) {
+                    addScore(100, g.x, g.y);
+                    sounds.playPop(600);
+                    createExplosion(g.x, g.y, '#10b981', 10);
+                    levelData.gems.splice(i, 1);
+                }
+            }
+
+            levelData.bombs.forEach(b => {
+                b.x += b.vx; b.y += b.vy;
+                if (b.x < b.radius || b.x > canvas.width - b.radius) b.vx *= -1;
+                if (b.y < b.radius || b.y > canvas.height - b.radius) b.vy *= -1;
+
+                ctx.save();
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 12; ctx.fill();
+                ctx.restore();
+
+                if (Math.hypot(mousePos.x - b.x, mousePos.y - b.y) < b.radius + 8) {
+                    combo = 1; updateHUD(); sounds.playError();
+                    createExplosion(mousePos.x, mousePos.y, '#ef4444', 8);
+                }
+            });
+        }
+
+        // Level 8: Puzzle Snap
+        function updateLevel8(dt) {
+            levelData.slots.forEach(s => {
+                ctx.save();
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+                ctx.fillStyle = s.filled ? 'rgba(34, 197, 94, 0.3)' : 'rgba(30, 41, 59, 0.6)';
+                ctx.fill(); ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px Orbitron'; ctx.textAlign = 'center'; ctx.fillText(s.shape.toUpperCase(), s.x, s.y + 4);
+                ctx.restore();
+            });
+
+            let allSnapped = true;
+            levelData.pieces.forEach(p => {
+                if (!p.isSnapped) allSnapped = false;
+
+                if (p.isDragging) {
+                    p.x = mousePos.x; p.y = mousePos.y;
+                }
+
+                ctx.save();
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#6366f1'; ctx.shadowColor = '#6366f1'; ctx.shadowBlur = 12; ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Orbitron'; ctx.textAlign = 'center'; ctx.fillText(p.shape.toUpperCase(), p.x, p.y + 4);
+                ctx.restore();
+            });
+
+            if (allSnapped) {
+                addScore(1200, canvas.width/2, canvas.height/2);
+                sounds.playLevelUp();
+                initLevel8Puzzle();
+            }
+        }
+
+        // Level 9: Scroll Master
+        function updateLevel9(dt) {
+            levelData.targetMin += Math.sin(Date.now() * 0.003) * 0.2;
+            levelData.targetMax += Math.sin(Date.now() * 0.003) * 0.2;
+
+            const barW = 60; const barH = canvas.height * 0.6;
+            const barX = canvas.width / 2 - barW / 2; const barY = canvas.height * 0.2;
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 4;
+            ctx.fillRect(barX, barY, barW, barH); ctx.strokeRect(barX, barY, barW, barH);
+
+            const topY = barY + barH * (1 - levelData.targetMax / 100);
+            const botY = barY + barH * (1 - levelData.targetMin / 100);
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.35)'; ctx.fillRect(barX + 4, topY, barW - 8, botY - topY);
+
+            const markerY = barY + barH * (1 - levelData.scrollVal / 100);
+            const inZone = levelData.scrollVal >= levelData.targetMin && levelData.scrollVal <= levelData.targetMax;
+
+            ctx.fillStyle = inZone ? '#14b8a6' : '#ef4444';
+            ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 15;
+            ctx.fillRect(barX - 8, markerY - 6, barW + 16, 12);
+            ctx.restore();
+
+            if (inZone) {
+                addScore(Math.floor(100 * dt), canvas.width/2 + 80, markerY);
+            }
+        }
+
+        // Level 10: Connect Dots
+        function updateLevel10(dt) {
+            ctx.save();
+            ctx.strokeStyle = '#f97316'; ctx.lineWidth = 4; ctx.beginPath();
+            for (let i = 0; i < levelData.currentDotIndex; i++) {
+                const d = levelData.dots[i];
+                if (i === 0) ctx.moveTo(d.x, d.y);
+                else ctx.lineTo(d.x, d.y);
+            }
+            if (levelData.isDrawing && levelData.currentDotIndex > 0) {
+                ctx.lineTo(mousePos.x, mousePos.y);
+            }
+            ctx.stroke();
+
+            levelData.dots.forEach(d => {
+                ctx.beginPath(); ctx.arc(d.x, d.y, d.radius, 0, Math.PI * 2);
+                ctx.fillStyle = d.visited ? '#22c55e' : '#f97316';
+                ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Orbitron'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(d.id, d.x, d.y);
+            });
+            ctx.restore();
+        }
+
+        // Level 11: Close Windows Popup
+        function updateLevel11(dt) {
+            if (levelData.windows.length < 5 && Math.random() < 0.05) {
+                const types = ['chrome', 'word', 'paint', 'explorer'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const wWidth = 240;
+                const wHeight = 150;
+                levelData.windows.push({
+                    x: Math.random() * (canvas.width - wWidth - 40) + 20,
+                    y: Math.random() * (canvas.height - wHeight - 40) + 20,
+                    width: wWidth,
+                    height: wHeight,
+                    type: type,
+                    life: 5.5
+                });
+                sounds.playPop(300);
+            }
+
+            for (let i = 0; i < levelData.windows.length; i++) {
+                const w = levelData.windows[i];
+                w.life -= dt;
+
+                ctx.save();
+                
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+                ctx.shadowBlur = 15;
+                ctx.shadowOffsetX = 5;
+                ctx.shadowOffsetY = 5;
+
+                ctx.fillStyle = '#ffffff'; 
+                ctx.fillRect(w.x, w.y, w.width, w.height);
+                
+                ctx.shadowColor = 'transparent';
+
+                switch(w.type) {
+                    case 'chrome':
+                        ctx.fillStyle = '#dee1e6'; ctx.fillRect(w.x, w.y, w.width, 26);
+                        ctx.fillStyle = '#ffffff'; 
+                        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(w.x + 10, w.y + 6, 80, 20, [6, 6, 0, 0]) : ctx.fillRect(w.x + 10, w.y + 6, 80, 20); ctx.fill();
+                        ctx.fillStyle = '#3c4043'; ctx.font = 'bold 10px sans-serif'; ctx.fillText("Google Chrome", w.x + 15, w.y + 16);
+                        ctx.fillStyle = '#f1f3f4'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(w.x + 10, w.y + 30, w.width - 20, 16, 8) : ctx.fillRect(w.x + 10, w.y + 30, w.width - 20, 16); ctx.fill();
+                        const cx = w.x + w.width/2; const cy = w.y + 75;
+                        ctx.fillStyle = '#4285f4'; ctx.beginPath(); ctx.arc(cx - 20, cy, 6, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = '#ea4335'; ctx.beginPath(); ctx.arc(cx - 6, cy, 6, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = '#fbbc05'; ctx.beginPath(); ctx.arc(cx + 8, cy, 6, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = '#34a853'; ctx.beginPath(); ctx.arc(cx + 22, cy, 6, 0, Math.PI*2); ctx.fill();
+                        ctx.strokeStyle = '#dfe1e5'; ctx.lineWidth = 1;
+                        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx - 60, cy + 15, 120, 14, 7) : ctx.strokeRect(cx - 60, cy + 15, 120, 14); ctx.stroke();
+                        break;
+                    case 'word':
+                        ctx.fillStyle = '#2b579a'; ctx.fillRect(w.x, w.y, w.width, 26);
+                        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText("Document - Word", w.x + 10, w.y + 13);
+                        ctx.fillStyle = '#f3f2f1'; ctx.fillRect(w.x, w.y + 26, w.width, 25);
+                        ctx.fillStyle = '#e1dfdd'; ctx.fillRect(w.x + 10, w.y + 32, 20, 12); ctx.fillRect(w.x + 35, w.y + 32, 20, 12); ctx.fillRect(w.x + 60, w.y + 32, 40, 12);
+                        ctx.fillStyle = '#e1dfdd'; ctx.fillRect(w.x, w.y + 51, w.width, w.height - 51);
+                        ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(0,0,0,0.1)'; ctx.shadowBlur = 4;
+                        ctx.fillRect(w.x + 40, w.y + 60, w.width - 80, w.height - 70);
+                        ctx.shadowColor = 'transparent';
+                        ctx.fillStyle = '#000000'; 
+                        ctx.fillRect(w.x + 45, w.y + 70, w.width - 110, 4);
+                        ctx.fillRect(w.x + 45, w.y + 80, w.width - 90, 4);
+                        ctx.fillRect(w.x + 45, w.y + 90, w.width - 120, 4);
+                        break;
+                    case 'paint':
+                        ctx.fillStyle = '#e8f2fc'; ctx.fillRect(w.x, w.y, w.width, 26);
+                        ctx.fillStyle = '#000000'; ctx.font = 'bold 10px sans-serif'; ctx.fillText("Untitled - Paint", w.x + 10, w.y + 13);
+                        ctx.fillStyle = '#f5f6f7'; ctx.fillRect(w.x, w.y + 26, w.width, 25);
+                        ctx.fillStyle = '#ef4444'; ctx.fillRect(w.x + 10, w.y + 32, 10, 10);
+                        ctx.fillStyle = '#22c55e'; ctx.fillRect(w.x + 22, w.y + 32, 10, 10);
+                        ctx.fillStyle = '#3b82f6'; ctx.fillRect(w.x + 34, w.y + 32, 10, 10);
+                        ctx.fillStyle = '#f59e0b'; ctx.fillRect(w.x + 46, w.y + 32, 10, 10);
+                        ctx.fillStyle = '#e5e7eb'; ctx.fillRect(w.x, w.y + 51, w.width, w.height - 51);
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(w.x + 10, w.y + 61, w.width - 20, w.height - 71);
+                        ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.beginPath();
+                        ctx.moveTo(w.x + 30, w.y + 80); ctx.quadraticCurveTo(w.x + 80, w.y + 40, w.x + 120, w.y + 110); ctx.stroke();
+                        break;
+                    case 'explorer':
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(w.x, w.y, w.width, 26);
+                        ctx.fillStyle = '#000000'; ctx.font = 'bold 10px sans-serif'; ctx.fillText("File Explorer", w.x + 10, w.y + 13);
+                        ctx.fillStyle = '#e5e7eb'; ctx.fillRect(w.x, w.y + 26, w.width, 1);
+                        ctx.fillStyle = '#f3f2f1'; ctx.fillRect(w.x, w.y + 27, 60, w.height - 27);
+                        ctx.fillStyle = '#cbd5e1'; ctx.fillRect(w.x + 5, w.y + 35, 45, 6); ctx.fillRect(w.x + 5, w.y + 47, 35, 6);
+                        ctx.fillStyle = '#fbbc05';
+                        ctx.fillRect(w.x + 75, w.y + 40, 22, 16); ctx.fillRect(w.x + 110, w.y + 40, 22, 16); ctx.fillRect(w.x + 145, w.y + 40, 22, 16);
+                        ctx.fillRect(w.x + 75, w.y + 70, 22, 16); ctx.fillRect(w.x + 110, w.y + 70, 22, 16);
+                        break;
+                }
+
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(w.x, w.y, w.width, w.height);
+
+                const btnSize = 18;
+                const btnX = w.x + w.width - btnSize - 4;
+                const btnY = w.y + 4;
+                
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(btnX, btnY, btnSize, btnSize);
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(btnX + 5, btnY + 5);
+                ctx.lineTo(btnX + btnSize - 5, btnY + btnSize - 5);
+                ctx.moveTo(btnX + btnSize - 5, btnY + 5);
+                ctx.lineTo(btnX + 5, btnY + btnSize - 5);
+                ctx.stroke();
+
+                ctx.restore();
+
+                if (w.life <= 0) {
+                    combo = 1; updateHUD();
+                    levelData.windows.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        // Level 12: Shutdown Simulator
+        function updateLevel12(dt) {
+            if (levelData.instances.length < 4 && Math.random() < 0.035) {
+                levelData.instances.push({
+                    x: Math.random() * (canvas.width - 300) + 20,
+                    y: Math.random() * (canvas.height - 320) + 270,
+                    step: 0,
+                    timer: 0
+                });
+            }
+
+            for (let i = levelData.instances.length - 1; i >= 0; i--) {
+                let inst = levelData.instances[i];
+
+                if (inst.step === 3) {
+                    inst.timer += dt;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, 1 - inst.timer);
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.fillRect(inst.x, inst.y, 44, 44);
+                    ctx.restore();
+
+                    const angle = inst.timer * Math.PI * 4;
+                    ctx.beginPath();
+                    ctx.arc(inst.x + 22, inst.y + 22, 18, angle, angle + Math.PI*1.5);
+                    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 4; ctx.stroke();
+
+                    if (inst.timer > 1.0) {
+                        levelData.instances.splice(i, 1);
+                    }
+                    continue;
+                }
+
+                ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10;
+                ctx.fillStyle = inst.step >= 1 ? '#3b82f6' : 'rgba(30, 41, 59, 0.9)';
+                ctx.fillRect(inst.x, inst.y, 44, 44);
+                ctx.shadowColor = 'transparent';
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(inst.x + 10, inst.y + 10, 10, 10);
+                ctx.fillRect(inst.x + 22, inst.y + 10, 10, 10);
+                ctx.fillRect(inst.x + 10, inst.y + 22, 10, 10);
+                ctx.fillRect(inst.x + 22, inst.y + 22, 10, 10);
+
+                if (inst.step >= 1) {
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+                    ctx.strokeStyle = '#334155'; ctx.lineWidth = 2;
+                    ctx.fillRect(inst.x, inst.y - 250, 200, 245);
+                    ctx.strokeRect(inst.x, inst.y - 250, 200, 245);
+
+                    ctx.fillStyle = '#334155';
+                    ctx.fillRect(inst.x + 60, inst.y - 230, 120, 60);
+                    ctx.fillRect(inst.x + 60, inst.y - 160, 55, 55);
+                    ctx.fillRect(inst.x + 125, inst.y - 160, 55, 55);
+
+                    const px = inst.x + 10;
+                    const py = inst.y - 40;
+                    ctx.fillStyle = inst.step >= 2 ? '#ef4444' : '#94a3b8';
+                    ctx.beginPath(); ctx.arc(px + 16, py + 16, 8, -Math.PI*0.3, Math.PI*1.3);
+                    ctx.lineWidth = 2; ctx.strokeStyle = ctx.fillStyle; ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(px + 16, py + 6); ctx.lineTo(px + 16, py + 16); ctx.stroke();
+                }
+
+                if (inst.step >= 2) {
+                    const mx = inst.x + 45;
+                    const my = inst.y - 150;
+                    ctx.fillStyle = '#1e293b';
+                    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+                    ctx.fillRect(mx, my, 140, 105);
+                    ctx.strokeRect(mx, my, 140, 105);
+
+                    ctx.fillStyle = '#e2e8f0'; ctx.font = '14px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                    
+                    ctx.fillText("Sleep", mx + 30, my + 17);
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(mx, my + 35, 140, 35);
+                    ctx.fillStyle = '#000000';
+                    ctx.fillText("Shut down", mx + 30, my + 52);
+                    
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillText("Restart", mx + 30, my + 87);
+
+                    ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.arc(mx + 15, my + 17, 4, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(mx + 15, my + 52, 4, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.arc(mx + 15, my + 87, 4, 0, Math.PI*2); ctx.fill();
+                }
+            }
+        }
+
+        function drawCursorTrail() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(mousePos.x, mousePos.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
+            ctx.shadowColor = '#3b82f6';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(mousePos.x, mousePos.y, 16, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            mousePos = getCanvasPos(e);
+
+            if (currentLevel === 10 && gameState === 'PLAYING' && levelData.isDrawing) {
+                const nextDot = levelData.dots[levelData.currentDotIndex];
+                if (nextDot && Math.hypot(mousePos.x - nextDot.x, mousePos.y - nextDot.y) < nextDot.radius) {
+                    nextDot.visited = true;
+                    levelData.currentDotIndex++;
+                    addScore(200, nextDot.x, nextDot.y);
+                    sounds.playPop(700);
+
+                    if (levelData.currentDotIndex >= levelData.dots.length) {
+                        addScore(1500, canvas.width/2, canvas.height/2);
+                        sounds.playLevelUp();
+                        initLevel10Dots();
+                    }
+                }
+            }
+        });
+
+        // Left Click Handler
+        canvas.addEventListener('mousedown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            sounds.init();
+            totalClicks++;
+            const pos = getCanvasPos(e);
+
+            if (currentLevel === 1) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(150, t.x, t.y);
+                        createExplosion(t.x, t.y, '#3b82f6', 15);
+                        sounds.playPop(520);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            } else if (currentLevel === 4) {
+                levelData.items.forEach(item => {
+                    if (!item.isDone && Math.hypot(pos.x - item.x, pos.y - item.y) <= item.radius) {
+                        item.isDragging = true;
+                    }
+                });
+            } else if (currentLevel === 6) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (t.type === 'LEFT' && Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(150, t.x, t.y);
+                        createExplosion(t.x, t.y, '#3b82f6', 15);
+                        sounds.playPop(520);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            } else if (currentLevel === 8) {
+                levelData.pieces.forEach(p => {
+                    if (!p.isSnapped && Math.hypot(pos.x - p.x, pos.y - p.y) <= p.radius) {
+                        p.isDragging = true;
+                    }
+                });
+            } else if (currentLevel === 10) {
+                const firstDot = levelData.dots[0];
+                if (Math.hypot(pos.x - firstDot.x, pos.y - firstDot.y) <= firstDot.radius) {
+                    levelData.isDrawing = true;
+                    if (levelData.currentDotIndex === 0) {
+                        firstDot.visited = true;
+                        levelData.currentDotIndex = 1;
+                    }
+                }
+            } else if (currentLevel === 11) {
+                for (let i = levelData.windows.length - 1; i >= 0; i--) {
+                    const w = levelData.windows[i];
+                    const btnSize = 18;
+                    const btnX = w.x + w.width - btnSize - 4;
+                    const btnY = w.y + 4;
+                    
+                    if (pos.x >= btnX - 4 && pos.x <= btnX + btnSize + 4 &&
+                        pos.y >= btnY - 4 && pos.y <= btnY + btnSize + 4) {
+                        successfulClicks++;
+                        addScore(250, btnX, btnY);
+                        createExplosion(btnX + 9, btnY + 9, '#ef4444', 15);
+                        sounds.playPop(600);
+                        levelData.windows.splice(i, 1);
+                        return;
+                    } else if (pos.x >= w.x && pos.x <= w.x + w.width &&
+                               pos.y >= w.y && pos.y <= w.y + w.height) {
+                        return;
+                    }
+                }
+            } else if (currentLevel === 12) {
+                for (let i = levelData.instances.length - 1; i >= 0; i--) {
+                    let inst = levelData.instances[i];
+                    if (inst.step === 3) continue;
+
+                    if (inst.step >= 2) {
+                        if (pos.x >= inst.x + 45 && pos.x <= inst.x + 185 &&
+                            pos.y >= inst.y - 115 && pos.y <= inst.y - 80) {
+                            inst.step = 3;
+                            inst.timer = 0;
+                            successfulClicks++;
+                            addScore(800, pos.x, pos.y);
+                            createExplosion(pos.x, pos.y, '#3b82f6', 20);
+                            sounds.playSuccess();
+                            return;
+                        }
+                    }
+
+                    if (inst.step >= 1) {
+                        if (pos.x >= inst.x + 10 && pos.x <= inst.x + 42 &&
+                            pos.y >= inst.y - 40 && pos.y <= inst.y - 8) {
+                            inst.step = inst.step === 1 ? 2 : 1;
+                            successfulClicks++;
+                            sounds.playPop(500);
+                            return; 
+                        }
+                    }
+
+                    if (pos.x >= inst.x && pos.x <= inst.x + 44 &&
+                        pos.y >= inst.y && pos.y <= inst.y + 44) {
+                        inst.step = inst.step === 0 ? 1 : 0;
+                        successfulClicks++;
+                        sounds.playPop(400);
+                        return;
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (gameState !== 'PLAYING') return;
+
+            if (currentLevel === 4) {
+                levelData.items.forEach(item => {
+                    if (item.isDragging) {
+                        item.isDragging = false;
+                        levelData.zones.forEach(z => {
+                            if (z.id === item.type && Math.hypot(item.x - z.x, item.y - z.y) <= z.radius * 1.2) {
+                                item.x = z.x; item.y = z.y; item.isDone = true;
+                                successfulClicks++;
+                                addScore(300, z.x, z.y);
+                                sounds.playSuccess();
+                                createExplosion(z.x, z.y, item.color, 15);
+                            }
+                        });
+                    }
+                });
+            } else if (currentLevel === 8) {
+                levelData.pieces.forEach(p => {
+                    if (p.isDragging) {
+                        p.isDragging = false;
+                        levelData.slots.forEach(s => {
+                            if (s.shape === p.shape && !s.filled && Math.hypot(p.x - s.x, p.y - s.y) <= s.radius * 1.2) {
+                                p.x = s.x; p.y = s.y; p.isSnapped = true; s.filled = true;
+                                addScore(400, s.x, s.y);
+                                sounds.playSuccess();
+                            }
+                        });
+                    }
+                });
+            } else if (currentLevel === 10) {
+                levelData.isDrawing = false;
+            }
+        });
+
+        // Double Click Handler (Màn 3 Đã Chỉnh Sửa Đứng Yên)
+        canvas.addEventListener('dblclick', (e) => {
+            if (gameState !== 'PLAYING') return;
+            totalClicks++;
+            const pos = getCanvasPos(e);
+
+            if (currentLevel === 3) {
+                for (let i = levelData.blocks.length - 1; i >= 0; i--) {
+                    const b = levelData.blocks[i];
+                    // Hitbox kiểm tra nhấp đúp chuẩn ô biểu tượng
+                    if (pos.x >= b.x - b.radius && pos.x <= b.x + b.radius &&
+                        pos.y >= b.y - b.radius && pos.y <= b.y + b.radius) {
+                        
+                        successfulClicks++;
+                        addScore(300, b.x, b.y);
+                        
+                        // Hiệu ứng floating "MỞ LÊN"
+                        openPopups.push({
+                            x: b.x,
+                            y: b.y,
+                            life: 1.5
+                        });
+                        
+                        createExplosion(b.x, b.y, b.app.color, 20);
+                        sounds.playSuccess();
+
+                        // Thay thế bằng ứng dụng mới ở vị trí khác
+                        levelData.blocks[i] = createNewStaticApp();
+                        return;
+                    }
+                }
+            } else if (currentLevel === 6) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (t.type === 'DOUBLE' && Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(250, t.x, t.y);
+                        createExplosion(t.x, t.y, '#ec4899', 20);
+                        sounds.playPop(650);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            }
+        });
+
+        // Right Click Handler
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (gameState !== 'PLAYING') return;
+            totalClicks++;
+            const pos = getCanvasPos(e);
+
+            if (currentLevel === 2) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(200, t.x, t.y);
+                        createExplosion(t.x, t.y, '#a855f7', 18);
+                        sounds.playPop(780);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            } else if (currentLevel === 6) {
+                for (let i = levelData.targets.length - 1; i >= 0; i--) {
+                    const t = levelData.targets[i];
+                    if (t.type === 'RIGHT' && Math.hypot(pos.x - t.x, pos.y - t.y) <= t.radius) {
+                        successfulClicks++;
+                        addScore(200, t.x, t.y);
+                        createExplosion(t.x, t.y, '#a855f7', 18);
+                        sounds.playPop(780);
+                        levelData.targets.splice(i, 1);
+                        return;
+                    }
+                }
+            }
+        });
+
+        // Scroll Wheel Handler
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (gameState !== 'PLAYING' || currentLevel !== 9) return;
+
+            const delta = Math.sign(e.deltaY);
+            levelData.scrollVal = Math.max(0, Math.min(100, levelData.scrollVal - delta * 4));
+            sounds.playPop(300 + levelData.scrollVal * 3);
+        }, { passive: false });
+
+        function addScore(points, x, y) {
+            score += points * combo;
+            combo = Math.min(10, combo + 1);
+            if (combo > maxCombo) maxCombo = combo;
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-level').innerText = `${currentLevel}/12`;
+            document.getElementById('hud-score').innerText = score;
+            document.getElementById('hud-combo').innerText = `x${combo}`;
+            document.getElementById('hud-timer').innerText = `${timeLeft}s`;
+        }
+
+        function selectLevel(lvl) {
+            sounds.init();
+            gameState = 'PLAYING';
+            score = 0; combo = 1; maxCombo = 1;
+            totalClicks = 0; successfulClicks = 0;
+
+            document.getElementById('modal-menu').classList.add('hidden');
+            document.getElementById('modal-gameover').classList.add('hidden');
+
+            initLevel(lvl);
+            updateHUD();
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateHUD();
+                if (timeLeft <= 0) completeLevel();
+            }, 1000);
+        }
+
+        function startCampaign() {
+            selectLevel(1);
+        }
+
+        function completeLevel() {
+            gameState = 'GAMEOVER';
+            clearInterval(timerInterval);
+
+            const accuracy = totalClicks > 0 ? Math.round((successfulClicks / totalClicks) * 100) : 100;
+
+            document.getElementById('go-level-name').innerText = `Màn ${currentLevel}: ${LEVEL_CONFIGS[currentLevel].name}`;
+            document.getElementById('go-score').innerText = score;
+            document.getElementById('go-max-combo').innerText = `x${maxCombo}`;
+            document.getElementById('go-accuracy').innerText = `${accuracy}%`;
+
+            const btnNext = document.getElementById('btn-next-level');
+            if (currentLevel < 12) {
+                btnNext.style.display = 'block';
+            } else {
+                btnNext.style.display = 'none';
+                document.getElementById('go-title').innerText = "BẬC THẦY CHUỘT!";
+                document.getElementById('go-subtitle').innerText = "Bạn đã chinh phục toàn bộ 12 màn chơi thao tác chuột xuất sắc!";
+            }
+
+            document.getElementById('modal-gameover').classList.remove('hidden');
+            sounds.playLevelUp();
+        }
+
+        function nextLevel() {
+            if (currentLevel < 12) selectLevel(currentLevel + 1);
+        }
+
+        function showMenu() {
+            gameState = 'MENU';
+            clearInterval(timerInterval);
+            document.getElementById('modal-gameover').classList.add('hidden');
+            document.getElementById('modal-menu').classList.remove('hidden');
+            document.getElementById('mode-info').style.opacity = '0';
+        }
+
+        function restartLevel() {
+            selectLevel(currentLevel);
+        }
+
+        document.getElementById('btn-restart').addEventListener('click', restartLevel);
+        
+        const soundBtn = document.getElementById('btn-sound');
+        soundBtn.addEventListener('click', () => {
+            sounds.enabled = !sounds.enabled;
+            soundBtn.innerHTML = sounds.enabled ? 
+                '<i class="fa-solid fa-volume-high text-lg"></i>' : 
+                '<i class="fa-solid fa-volume-xmark text-lg text-rose-500"></i>';
+        });
+
+        window.onload = function() {
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
